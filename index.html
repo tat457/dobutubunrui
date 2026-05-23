@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>動物仕分けゲーム</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:sans-serif;
+    background:#eef7ff;
+    overflow-x:hidden;
+    color:#222;
+}
+
+header{
+    background:#4da6ff;
+    color:white;
+    text-align:center;
+    padding:14px;
+    font-size:28px;
+    font-weight:bold;
+}
+
+#topBar{
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:12px;
+    background:white;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    position:sticky;
+    top:0;
+    z-index:10;
+}
+
+.info{
+    font-size:22px;
+    font-weight:bold;
+}
+
+#startBtn{
+    padding:10px 24px;
+    font-size:20px;
+    border:none;
+    border-radius:12px;
+    background:#ff9800;
+    color:white;
+    cursor:pointer;
+}
+
+#startBtn:hover{
+    background:#f57c00;
+}
+
+#gameArea{
+    width:100%;
+    max-width:1300px;
+    margin:auto;
+    padding:16px;
+}
+
+#categories{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px;
+    margin-bottom:24px;
+}
+
+.category{
+    background:white;
+    border-radius:18px;
+    min-height:220px;
+    padding:12px;
+    border:4px solid #90caf9;
+    transition:0.2s;
+}
+
+.category.correct{
+    border-color:#4caf50;
+    background:#e8f5e9;
+}
+
+.category.wrong{
+    border-color:#f44336;
+    background:#ffebee;
+}
+
+.category h2{
+    text-align:center;
+    margin-bottom:12px;
+    font-size:24px;
+}
+
+.dropZone{
+    min-height:150px;
+}
+
+#cards{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:14px;
+    min-height:140px;
+}
+
+.card{
+    width:120px;
+    background:white;
+    border-radius:16px;
+    padding:12px;
+    text-align:center;
+    cursor:grab;
+    user-select:none;
+    box-shadow:0 3px 8px rgba(0,0,0,0.2);
+    transition:transform 0.15s;
+}
+
+.card:hover{
+    transform:scale(1.05);
+}
+
+.animal{
+    font-size:52px;
+}
+
+.name{
+    margin-top:8px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+#message{
+    text-align:center;
+    font-size:30px;
+    margin-top:18px;
+    font-weight:bold;
+    min-height:40px;
+}
+
+#result{
+    text-align:center;
+    font-size:36px;
+    margin-top:20px;
+    font-weight:bold;
+    color:#1565c0;
+}
+
+@media(max-width:700px){
+    .card{
+        width:95px;
+    }
+
+    .animal{
+        font-size:42px;
+    }
+
+    .name{
+        font-size:16px;
+    }
+
+    .info{
+        font-size:18px;
+    }
+}
+</style>
+</head>
+<body>
+
+<header>
+動物仕分けゲーム
+</header>
+
+<div id="topBar">
+    <div class="info">⏰ 残り: <span id="time">60</span>秒</div>
+    <div class="info">⭐ スコア: <span id="score">0</span></div>
+    <button id="startBtn">スタート</button>
+</div>
+
+<div id="gameArea">
+
+    <div id="categories">
+        <div class="category" data-category="sea">
+            <h2>🌊 海の生き物</h2>
+            <div class="dropZone"></div>
+        </div>
+
+        <div class="category" data-category="fly">
+            <h2>🕊 空を飛ぶ</h2>
+            <div class="dropZone"></div>
+        </div>
+
+        <div class="category" data-category="four">
+            <h2>🐾 四本足</h2>
+            <div class="dropZone"></div>
+        </div>
+    </div>
+
+    <div id="cards"></div>
+
+    <div id="message"></div>
+    <div id="result"></div>
+
+</div>
+
+<script>
+const animalData = [
+    {name:"イルカ", emoji:"🐬", category:"sea"},
+    {name:"サメ", emoji:"🦈", category:"sea"},
+    {name:"タコ", emoji:"🐙", category:"sea"},
+    {name:"クジラ", emoji:"🐋", category:"sea"},
+
+    {name:"ワシ", emoji:"🦅", category:"fly"},
+    {name:"ハト", emoji:"🕊", category:"fly"},
+    {name:"フクロウ", emoji:"🦉", category:"fly"},
+    {name:"アヒル", emoji:"🦆", category:"fly"},
+
+    {name:"ライオン", emoji:"🦁", category:"four"},
+    {name:"イヌ", emoji:"🐶", category:"four"},
+    {name:"ネコ", emoji:"🐱", category:"four"},
+    {name:"ウマ", emoji:"🐴", category:"four"}
+];
+
+const cardsDiv = document.getElementById("cards");
+const scoreText = document.getElementById("score");
+const timeText = document.getElementById("time");
+const message = document.getElementById("message");
+const result = document.getElementById("result");
+const startBtn = document.getElementById("startBtn");
+
+let score = 0;
+let time = 60;
+let timer = null;
+let playing = false;
+
+function shuffle(array){
+    for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+    }
+}
+
+function createCards(){
+    cardsDiv.innerHTML = "";
+
+    const list = [...animalData];
+    shuffle(list);
+
+    list.forEach((animal,index)=>{
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.draggable = true;
+        card.dataset.category = animal.category;
+        card.id = "card"+index;
+
+        card.innerHTML = `
+            <div class="animal">${animal.emoji}</div>
+            <div class="name">${animal.name}</div>
+        `;
+
+        card.addEventListener("dragstart",e=>{
+            e.dataTransfer.setData("text/plain", card.id);
+        });
+
+        cardsDiv.appendChild(card);
+    });
+}
+
+function resetZones(){
+    document.querySelectorAll(".category").forEach(zone=>{
+        zone.classList.remove("correct");
+        zone.classList.remove("wrong");
+
+        const drop = zone.querySelector(".dropZone");
+        drop.innerHTML = "";
+    });
+}
+
+document.querySelectorAll(".category").forEach(zone=>{
+
+    zone.addEventListener("dragover",e=>{
+        e.preventDefault();
+    });
+
+    zone.addEventListener("drop",e=>{
+        e.preventDefault();
+
+        if(!playing) return;
+
+        const cardId = e.dataTransfer.getData("text/plain");
+        const card = document.getElementById(cardId);
+
+        if(!card) return;
+
+        const correctCategory = card.dataset.category;
+        const zoneCategory = zone.dataset.category;
+
+        if(correctCategory === zoneCategory){
+
+            zone.querySelector(".dropZone").appendChild(card);
+
+            zone.classList.remove("wrong");
+            zone.classList.add("correct");
+
+            score += 10;
+            scoreText.textContent = score;
+
+            message.textContent = "⭕ せいかい！";
+
+            if(document.querySelectorAll("#cards .card").length === 0){
+                finishGame();
+            }
+
+        }else{
+
+            zone.classList.remove("correct");
+            zone.classList.add("wrong");
+
+            score -= 5;
+            if(score < 0) score = 0;
+
+            scoreText.textContent = score;
+
+            message.textContent = "❌ ちがう分類！";
+        }
+    });
+});
+
+function startGame(){
+
+    clearInterval(timer);
+
+    playing = true;
+    score = 0;
+    time = 60;
+
+    scoreText.textContent = score;
+    timeText.textContent = time;
+    result.textContent = "";
+    message.textContent = "";
+
+    resetZones();
+    createCards();
+
+    timer = setInterval(()=>{
+
+        time--;
+        timeText.textContent = time;
+
+        if(time <= 0){
+            finishGame();
+        }
+
+    },1000);
+}
+
+function finishGame(){
+
+    playing = false;
+    clearInterval(timer);
+
+    result.innerHTML = `
+        🎉 ゲーム終了！<br>
+        最終スコア: ${score}
+    `;
+}
+
+startBtn.addEventListener("click",startGame);
+</script>
+
+</body>
+</html>
