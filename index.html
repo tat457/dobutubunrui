@@ -77,9 +77,11 @@ button:disabled{
     background:#fff;
     border-radius:18px;
     border:4px solid #90caf9;
-    min-height:260px;
+    height:320px;
     padding:12px;
     transition:background-color 0.2s ease, border-color 0.2s ease;
+    display:flex;
+    flex-direction:column;
 }
 
 .category.correct{
@@ -103,14 +105,32 @@ button:disabled{
 }
 
 .dropZone{
-    min-height:180px;
+    min-height:0;
     width:100%;
+    flex:1;
     display:flex;
     flex-wrap:wrap;
     gap:10px;
     justify-content:center;
     align-items:flex-start;
     padding:10px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+}
+
+.dropZone .card{
+    width:86px;
+    padding:8px;
+}
+
+.dropZone .emoji{
+    font-size:34px;
+}
+
+.dropZone .name{
+    margin-top:6px;
+    font-size:14px;
 }
 
 #cards{
@@ -172,6 +192,10 @@ button:disabled{
 }
 
 @media (max-width:700px){
+    .category{
+        height:280px;
+    }
+
     .card{
         width:95px;
     }
@@ -186,6 +210,19 @@ button:disabled{
 
     .info{
         font-size:18px;
+    }
+
+    .dropZone .card{
+        width:78px;
+        padding:7px;
+    }
+
+    .dropZone .emoji{
+        font-size:30px;
+    }
+
+    .dropZone .name{
+        font-size:12px;
     }
 }
 </style>
