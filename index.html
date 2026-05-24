@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>動物仕分けゲーム</title>
 
 <style>
@@ -12,17 +12,18 @@
 
 body{
     margin:0;
-    font-family:sans-serif;
+    font-family:"Hiragino Sans","Yu Gothic",sans-serif;
     background:#eef7ff;
+    color:#12324a;
 }
 
 header{
     background:#42a5f5;
-    color:white;
+    color:#fff;
     text-align:center;
     padding:15px;
     font-size:28px;
-    font-weight:bold;
+    font-weight:700;
 }
 
 #topBar{
@@ -30,16 +31,18 @@ header{
     justify-content:space-around;
     align-items:center;
     padding:12px;
-    background:white;
+    background:#fff;
     position:sticky;
     top:0;
     z-index:10;
     box-shadow:0 2px 5px rgba(0,0,0,0.15);
+    gap:12px;
+    flex-wrap:wrap;
 }
 
 .info{
     font-size:22px;
-    font-weight:bold;
+    font-weight:700;
 }
 
 button{
@@ -48,7 +51,13 @@ button{
     border:none;
     border-radius:10px;
     background:#ff9800;
-    color:white;
+    color:#fff;
+    cursor:pointer;
+}
+
+button:disabled{
+    opacity:0.6;
+    cursor:not-allowed;
 }
 
 #game{
@@ -65,12 +74,12 @@ button{
 }
 
 .category{
-    background:white;
+    background:#fff;
     border-radius:18px;
     border:4px solid #90caf9;
     min-height:260px;
     padding:12px;
-    transition:0.2s;
+    transition:background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .category.correct{
@@ -81,6 +90,11 @@ button{
 .category.wrong{
     background:#ffebee;
     border-color:#f44336;
+}
+
+.category.touch-target{
+    background:#e3f2fd;
+    border-color:#1e88e5;
 }
 
 .category h2{
@@ -108,17 +122,27 @@ button{
 
 .card{
     width:120px;
-    background:white;
+    background:#fff;
     border-radius:15px;
     padding:12px;
     text-align:center;
     cursor:grab;
     box-shadow:0 3px 8px rgba(0,0,0,0.2);
     user-select:none;
+    touch-action:none;
+}
+
+.card.touch-dragging{
+    opacity:0.35;
 }
 
 .card:active{
     cursor:grabbing;
+}
+
+.card[aria-disabled="true"]{
+    opacity:0.75;
+    cursor:default;
 }
 
 .emoji{
@@ -128,7 +152,7 @@ button{
 .name{
     margin-top:8px;
     font-size:20px;
-    font-weight:bold;
+    font-weight:700;
 }
 
 #message{
@@ -136,7 +160,7 @@ button{
     font-size:30px;
     margin-top:20px;
     min-height:40px;
-    font-weight:bold;
+    font-weight:700;
 }
 
 #result{
@@ -144,11 +168,10 @@ button{
     font-size:36px;
     margin-top:20px;
     color:#1565c0;
-    font-weight:bold;
+    font-weight:700;
 }
 
-@media(max-width:700px){
-
+@media (max-width:700px){
     .card{
         width:95px;
     }
@@ -176,13 +199,11 @@ button{
 <div id="topBar">
     <div class="info">⏰ <span id="time">60</span>秒</div>
     <div class="info">⭐ <span id="score">0</span></div>
-    <button id="startBtn">スタート</button>
+    <button id="startBtn" type="button">スタート</button>
 </div>
 
 <div id="game">
-
     <div id="categories">
-
         <div class="category" data-category="sea">
             <h2>🌊 海の生き物</h2>
             <div class="dropZone"></div>
@@ -197,33 +218,54 @@ button{
             <h2>🐾 四本足</h2>
             <div class="dropZone"></div>
         </div>
-
     </div>
 
-    <div id="cards"></div>
-
-    <div id="message"></div>
-    <div id="result"></div>
-
+    <div id="cards" aria-label="動物カード一覧"></div>
+    <div id="message" aria-live="polite"></div>
+    <div id="result" aria-live="polite"></div>
 </div>
 
 <script>
+"use strict";
+
 const animals = [
+    { name: "イルカ", emoji: "🐬", category: "sea" },
+    { name: "サメ", emoji: "🦈", category: "sea" },
+    { name: "タコ", emoji: "🐙", category: "sea" },
+    { name: "クジラ", emoji: "🐋", category: "sea" },
+    { name: "カニ", emoji: "🦀", category: "sea" },
+    { name: "エビ", emoji: "🦐", category: "sea" },
+    { name: "クラゲ", emoji: "🪼", category: "sea" },
+    { name: "アザラシ", emoji: "🦭", category: "sea" },
+    { name: "熱帯魚", emoji: "🐠", category: "sea" },
+    { name: "フグ", emoji: "🐡", category: "sea" },
 
-    {name:"イルカ",emoji:"🐬",category:"sea"},
-    {name:"サメ",emoji:"🦈",category:"sea"},
-    {name:"タコ",emoji:"🐙",category:"sea"},
-    {name:"クジラ",emoji:"🐋",category:"sea"},
+    { name: "ワシ", emoji: "🦅", category: "fly" },
+    { name: "ハト", emoji: "🕊", category: "fly" },
+    { name: "フクロウ", emoji: "🦉", category: "fly" },
+    { name: "アヒル", emoji: "🦆", category: "fly" },
+    { name: "オウム", emoji: "🦜", category: "fly" },
+    { name: "ニワトリ", emoji: "🐔", category: "fly" },
+    { name: "ひよこ", emoji: "🐤", category: "fly" },
+    { name: "コウモリ", emoji: "🦇", category: "fly" },
+    { name: "ハチ", emoji: "🐝", category: "fly" },
+    { name: "チョウ", emoji: "🦋", category: "fly" },
 
-    {name:"ワシ",emoji:"🦅",category:"fly"},
-    {name:"ハト",emoji:"🕊",category:"fly"},
-    {name:"フクロウ",emoji:"🦉",category:"fly"},
-    {name:"アヒル",emoji:"🦆",category:"fly"},
-
-    {name:"イヌ",emoji:"🐶",category:"four"},
-    {name:"ネコ",emoji:"🐱",category:"four"},
-    {name:"ライオン",emoji:"🦁",category:"four"},
-    {name:"ウマ",emoji:"🐴",category:"four"}
+    { name: "イヌ", emoji: "🐶", category: "four" },
+    { name: "ネコ", emoji: "🐱", category: "four" },
+    { name: "ライオン", emoji: "🦁", category: "four" },
+    { name: "ウマ", emoji: "🐴", category: "four" },
+    { name: "ウシ", emoji: "🐮", category: "four" },
+    { name: "ブタ", emoji: "🐷", category: "four" },
+    { name: "ヒツジ", emoji: "🐑", category: "four" },
+    { name: "ヤギ", emoji: "🐐", category: "four" },
+    { name: "ゾウ", emoji: "🐘", category: "four" },
+    { name: "トラ", emoji: "🐯", category: "four" },
+    { name: "クマ", emoji: "🐻", category: "four" },
+    { name: "キツネ", emoji: "🦊", category: "four" },
+    { name: "オオカミ", emoji: "🐺", category: "four" },
+    { name: "シカ", emoji: "🦌", category: "four" },
+    { name: "サル", emoji: "🐵", category: "four" }
 ];
 
 const cards = document.getElementById("cards");
@@ -231,172 +273,360 @@ const scoreText = document.getElementById("score");
 const timeText = document.getElementById("time");
 const message = document.getElementById("message");
 const result = document.getElementById("result");
+const startBtn = document.getElementById("startBtn");
+const categories = Array.from(document.querySelectorAll(".category"));
 
 let score = 0;
 let time = 60;
 let timer = null;
 let playing = false;
+let cardIdCounter = 0;
+let touchDrag = null;
 
 function shuffle(array){
-    for(let i=array.length-1;i>0;i--){
-        const j=Math.floor(Math.random()*(i+1));
-        [array[i],array[j]]=[array[j],array[i]];
+    for(let i = array.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
 }
 
-function createCards(){
+function resetCategoryState(){
+    categories.forEach((category) => {
+        category.classList.remove("correct", "wrong", "touch-target");
+    });
+}
 
-    cards.innerHTML = "";
+function flashCategory(targetCategory, stateClass){
+    const category = categories.find((item) => item.dataset.category === targetCategory);
+    if(!category){
+        return;
+    }
+
+    category.classList.remove("correct", "wrong");
+    category.classList.add(stateClass);
+
+    window.setTimeout(() => {
+        category.classList.remove(stateClass);
+    }, 350);
+}
+
+function clearTouchTarget(){
+    categories.forEach((category) => {
+        category.classList.remove("touch-target");
+    });
+}
+
+function getTouchPoint(event){
+    const touch = event.touches[0] || event.changedTouches[0];
+    if(!touch){
+        return null;
+    }
+
+    return {
+        x: touch.clientX,
+        y: touch.clientY
+    };
+}
+
+function updateTouchDragPosition(clientX, clientY){
+    if(!touchDrag){
+        return null;
+    }
+
+    touchDrag.helper.style.left = `${clientX - touchDrag.offsetX}px`;
+    touchDrag.helper.style.top = `${clientY - touchDrag.offsetY}px`;
+
+    const hoveredCategory = document.elementFromPoint(clientX, clientY)?.closest(".category");
+    clearTouchTarget();
+
+    if(hoveredCategory instanceof HTMLElement){
+        hoveredCategory.classList.add("touch-target");
+        return hoveredCategory;
+    }
+
+    return null;
+}
+
+function finishTouchDrag(dropTarget){
+    if(!touchDrag){
+        return;
+    }
+
+    const { card, helper } = touchDrag;
+    card.classList.remove("touch-dragging");
+    card.removeAttribute("aria-pressed");
+    helper.remove();
+    touchDrag = null;
+    clearTouchTarget();
+
+    if(dropTarget){
+        checkAnswer(card, dropTarget);
+    }
+}
+
+function buildCard(animal){
+    const card = document.createElement("div");
+    const emoji = document.createElement("div");
+    const name = document.createElement("div");
+
+    card.className = "card";
+    card.draggable = true;
+    card.id = `card-${cardIdCounter++}`;
+    card.dataset.category = animal.category;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", `${animal.name}を分類する`);
+
+    emoji.className = "emoji";
+    emoji.textContent = animal.emoji;
+
+    name.className = "name";
+    name.textContent = animal.name;
+
+    card.append(emoji, name);
+
+    card.addEventListener("dragstart", (event) => {
+        if(!playing || !event.dataTransfer){
+            event.preventDefault();
+            return;
+        }
+
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", card.id);
+    });
+
+    card.addEventListener("touchstart", (event) => {
+        if(!playing || !cards.contains(card) || touchDrag){
+            return;
+        }
+
+        const point = getTouchPoint(event);
+        if(!point){
+            return;
+        }
+
+        const rect = card.getBoundingClientRect();
+        const helper = card.cloneNode(true);
+
+        helper.id = `${card.id}-ghost`;
+        helper.style.position = "fixed";
+        helper.style.left = `${rect.left}px`;
+        helper.style.top = `${rect.top}px`;
+        helper.style.width = `${rect.width}px`;
+        helper.style.margin = "0";
+        helper.style.pointerEvents = "none";
+        helper.style.zIndex = "1000";
+        helper.style.transform = "scale(1.04)";
+        helper.style.boxShadow = "0 12px 24px rgba(0,0,0,0.25)";
+
+        document.body.appendChild(helper);
+
+        touchDrag = {
+            card,
+            helper,
+            offsetX: point.x - rect.left,
+            offsetY: point.y - rect.top
+        };
+
+        card.classList.add("touch-dragging");
+        card.setAttribute("aria-pressed", "true");
+        updateTouchDragPosition(point.x, point.y);
+        event.preventDefault();
+    }, { passive: false });
+
+    card.addEventListener("touchmove", (event) => {
+        if(!touchDrag || touchDrag.card !== card){
+            return;
+        }
+
+        const point = getTouchPoint(event);
+        if(!point){
+            return;
+        }
+
+        updateTouchDragPosition(point.x, point.y);
+        event.preventDefault();
+    }, { passive: false });
+
+    card.addEventListener("touchend", (event) => {
+        if(!touchDrag || touchDrag.card !== card){
+            return;
+        }
+
+        const point = getTouchPoint(event);
+        const hoveredCategory = point ? updateTouchDragPosition(point.x, point.y) : null;
+        const dropTarget = hoveredCategory instanceof HTMLElement ? hoveredCategory.dataset.category || "" : "";
+
+        finishTouchDrag(dropTarget || null);
+        event.preventDefault();
+    }, { passive: false });
+
+    card.addEventListener("touchcancel", () => {
+        if(!touchDrag || touchDrag.card !== card){
+            return;
+        }
+
+        finishTouchDrag(null);
+    });
+
+    card.addEventListener("keydown", (event) => {
+        if(!playing || !cards.contains(card)){
+            return;
+        }
+
+        const map = {
+            ArrowUp: "fly",
+            ArrowLeft: "sea",
+            ArrowRight: "four"
+        };
+
+        const target = map[event.key];
+        if(!target){
+            return;
+        }
+
+        event.preventDefault();
+        checkAnswer(card, target);
+    });
+
+    return card;
+}
+
+function createCards(){
+    cards.replaceChildren();
 
     const list = [...animals];
     shuffle(list);
 
-    list.forEach((animal,index)=>{
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.draggable = true;
-        card.id = "card"+index;
-        card.dataset.category = animal.category;
-
-        card.innerHTML = `
-            <div class="emoji">${animal.emoji}</div>
-            <div class="name">${animal.name}</div>
-        `;
-
-        // PC用
-        card.addEventListener("dragstart",e=>{
-            e.dataTransfer.setData("text/plain",card.id);
-        });
-
-        // スマホ用
-        card.addEventListener("click",()=>{
-
-            if(!playing) return;
-
-            const choice = prompt(
-`どこに分類する？
-
-1 → 海の生き物
-2 → 空を飛ぶ
-3 → 四本足`
-            );
-
-            if(choice==="1"){
-                checkAnswer(card,"sea");
-            }
-
-            if(choice==="2"){
-                checkAnswer(card,"fly");
-            }
-
-            if(choice==="3"){
-                checkAnswer(card,"four");
-            }
-        });
-
-        cards.appendChild(card);
+    const fragment = document.createDocumentFragment();
+    list.forEach((animal) => {
+        fragment.appendChild(buildCard(animal));
     });
+
+    cards.appendChild(fragment);
 }
 
-function checkAnswer(card,target){
+function setScore(nextScore){
+    score = Math.max(0, nextScore);
+    scoreText.textContent = String(score);
+}
 
-    const correct = card.dataset.category;
+function finishGame(){
+    playing = false;
+    startBtn.disabled = false;
+    finishTouchDrag(null);
 
-    if(correct===target){
-
-        document
-        .querySelector(`[data-category="${target}"] .dropZone`)
-        .appendChild(card);
-
-        score += 10;
-        message.textContent = "⭕ せいかい！";
-
-    }else{
-
-        score -= 5;
-
-        if(score<0) score=0;
-
-        message.textContent = "❌ ちがう！";
+    if(timer !== null){
+        window.clearInterval(timer);
+        timer = null;
     }
 
-    scoreText.textContent = score;
+    Array.from(document.querySelectorAll(".card")).forEach((card) => {
+        card.draggable = false;
+        card.setAttribute("aria-disabled", "true");
+        card.setAttribute("tabindex", "-1");
+    });
 
-    if(document.querySelectorAll("#cards .card").length===0){
+    result.textContent = `🎉 ゲーム終了！ スコア：${score}`;
+}
+
+function checkAnswer(card, target){
+    if(!playing || !(card instanceof HTMLElement) || !cards.contains(card)){
+        return;
+    }
+
+    const correct = card.dataset.category;
+    if(correct !== "sea" && correct !== "fly" && correct !== "four"){
+        return;
+    }
+
+    if(correct === target){
+        const zone = document.querySelector(`.category[data-category="${target}"] .dropZone`);
+        if(!(zone instanceof HTMLElement)){
+            return;
+        }
+
+        zone.appendChild(card);
+        card.draggable = false;
+        card.setAttribute("aria-disabled", "true");
+        card.setAttribute("tabindex", "-1");
+
+        setScore(score + 10);
+        message.textContent = "⭕ せいかい！";
+        flashCategory(target, "correct");
+    }else{
+        setScore(score - 5);
+        message.textContent = "❌ ちがう！";
+        flashCategory(target, "wrong");
+    }
+
+    if(cards.querySelector(".card") === null){
         finishGame();
     }
 }
 
-document.querySelectorAll(".category").forEach(zone=>{
-
-    zone.addEventListener("dragover",e=>{
-        e.preventDefault();
+categories.forEach((zone) => {
+    zone.addEventListener("dragover", (event) => {
+        if(playing){
+            event.preventDefault();
+        }
     });
 
-    zone.addEventListener("drop",e=>{
-        e.preventDefault();
+    zone.addEventListener("drop", (event) => {
+        event.preventDefault();
 
-        if(!playing) return;
+        if(!playing || !event.dataTransfer){
+            return;
+        }
 
-        const id = e.dataTransfer.getData("text/plain");
+        const id = event.dataTransfer.getData("text/plain");
+        if(!id){
+            return;
+        }
+
         const card = document.getElementById(id);
+        if(!(card instanceof HTMLElement)){
+            return;
+        }
 
-        const target = zone.dataset.category;
-
-        checkAnswer(card,target);
+        checkAnswer(card, zone.dataset.category || "");
     });
 });
 
 function startGame(){
+    if(timer !== null){
+        window.clearInterval(timer);
+        timer = null;
+    }
 
-    clearInterval(timer);
-
+    finishTouchDrag(null);
     playing = true;
+    startBtn.disabled = true;
 
-    score = 0;
+    setScore(0);
     time = 60;
-
-    scoreText.textContent = score;
-    timeText.textContent = time;
-
-    result.textContent = "";
+    timeText.textContent = String(time);
     message.textContent = "";
+    result.textContent = "";
+    resetCategoryState();
 
-    document.querySelectorAll(".dropZone").forEach(z=>{
-        z.innerHTML="";
+    document.querySelectorAll(".dropZone").forEach((zone) => {
+        zone.replaceChildren();
     });
 
     createCards();
 
-    timer = setInterval(()=>{
+    timer = window.setInterval(() => {
+        time -= 1;
+        timeText.textContent = String(Math.max(0, time));
 
-        time--;
-
-        timeText.textContent = time;
-
-        if(time<=0){
+        if(time <= 0){
             finishGame();
         }
-
-    },1000);
+    }, 1000);
 }
 
-function finishGame(){
-
-    playing = false;
-
-    clearInterval(timer);
-
-    result.innerHTML = `
-    🎉 ゲーム終了！<br>
-    スコア：${score}
-    `;
-}
-
-document
-.getElementById("startBtn")
-.addEventListener("click",startGame);
+startBtn.addEventListener("click", startGame);
 </script>
 
 </body>
